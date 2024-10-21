@@ -1,5 +1,5 @@
 import re
-from app import db
+from extensions import db
 
 class Aluno(db.Model):
     __tablename__ = "alunos"
@@ -7,16 +7,26 @@ class Aluno(db.Model):
     nome = db.Column(db.Text, nullable=False)
     periodo = db.Column(db.Integer, nullable=False)
     cpf = db.Column(db.String(11), nullable=False)
+    nome_do_curso = db.Column(db.Text, db.ForeignKey('cursos.nome'),nullable=False)
 
-    def __init__(self, nome, periodo, cpf):
+
+    def __init__(self, nome, periodo, cpf, nome_do_curso):
         if not self.valida_cpf(cpf):
             raise ValueError("CPF inválido. Deve ter exatamente 11 números.")
         if not self.valida_periodo(periodo):
             raise ValueError("Período inválido. Deve ser um número entre 1 e 8.")
+        if not self.valida_curso(nome_do_curso):
+            raise ValueError("Nome do curso inválido. Este curso não existe.")
         self.ra = self.gera_ra_automatico()
         self.nome = nome
         self.periodo = periodo
         self.cpf = cpf
+        self.nome_do_curso = nome_do_curso
+
+    @staticmethod
+    def valida_curso(nome_do_curso):
+        from blueprints.Curso.model import Curso
+        return db.session.query(db.exists().where(Curso.nome == nome_do_curso)).scalar()
 
     @staticmethod
     def valida_cpf(cpf):
