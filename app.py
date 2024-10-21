@@ -1,25 +1,25 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from extensions import db
 
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
 
-db = SQLAlchemy()
+db.init_app(app)
+migrate = Migrate(app, db)
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
-    app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
-    db.init_app(app)
-    
-    from blueprints.Aluno.routes import Aluno_bp
-    app.register_blueprint(Aluno_bp)
+CORS(app)
 
-    from blueprints.Curso.routes import Curso_bp
-    app.register_blueprint(Curso_bp)
+#REGISTRO DAS BLUEPRINTS:
+from blueprints.Aluno.routes import Aluno_bp
+app.register_blueprint(Aluno_bp)
 
-    from blueprints.Professor.routes import Professor_bp
-    app.register_blueprint(Professor_bp)
+from blueprints.Curso.routes import Curso_bp
+app.register_blueprint(Curso_bp)
 
-    migrate=Migrate(app,db)
-    return app
+from blueprints.Professor.routes import Professor_bp
+app.register_blueprint(Professor_bp)
+
+if __name__ == '__main__':
+    app.run(debug=True)
