@@ -5,8 +5,8 @@ Descrição: Esta API permite gerenciar Alunos, Professores e vagas de Pesquisa/
 
 **ENDPOINTS DE ALUNOS:**
 
-- GET(Todos): 
-    - rota:/ALUNO/GET_ALL
+**GET(Todos):**  
+rota: */ALUNO/GET_ALL*
 
     Descrição: Retorna todos os alunos.
 
@@ -32,8 +32,8 @@ Descrição: Esta API permite gerenciar Alunos, Professores e vagas de Pesquisa/
 
     Código de Status: 200 OK
 
-GET(específico): 
-    rota:/ALUNO/GET_BY_RA
+**GET(específico):** 
+rota: */ALUNO/GET_BY_RA*
 
     Descrição: Retorna aluno pelo RA.
 
@@ -56,8 +56,8 @@ GET(específico):
 
     Código de Status: 200 OK
 
-POST: 
-    rota:/VAGA/CREATE
+**POST:** 
+rota: */VAGA/CREATE*
 
     Descrição: Cria um novo aluno.
 
