@@ -15,8 +15,8 @@ CORS(app)
 from blueprints.Aluno.routes import Aluno_bp
 app.register_blueprint(Aluno_bp)
 
-from blueprints.Curso.routes import Curso_bp
-app.register_blueprint(Curso_bp)
+from blueprints.Vagas.routes import Vagas_bp
+app.register_blueprint(Vagas_bp)
 
 from blueprints.Professor.routes import Professor_bp
 app.register_blueprint(Professor_bp)
