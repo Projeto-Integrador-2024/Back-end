@@ -30,7 +30,6 @@ class Vaga(db.Model):
         else:
             return True
 
-
     def check_bolsa(self):
         if self.bolsa==0:
             return 'Não possui bolsa'
