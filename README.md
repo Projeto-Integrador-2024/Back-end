@@ -5,8 +5,8 @@ Descrição: Esta API permite gerenciar Alunos, Professores e vagas de Pesquisa/
 
 **ENDPOINTS DE ALUNOS:**
 
-GET(Todos): 
-    rota:/ALUNO/GET_ALL
+- GET(Todos): 
+    - rota:/ALUNO/GET_ALL
 
     Descrição: Retorna todos os alunos.
 
