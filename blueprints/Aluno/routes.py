@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from blueprints.Aluno.model import Aluno
+from blueprints.Aluno.model import Aluno, InvalidDataError
 
 Aluno_bp = Blueprint("Aluno",__name__)
 
@@ -8,15 +8,13 @@ Aluno_bp = Blueprint("Aluno",__name__)
 def criar_aluno():
     from app import db
     dados = request.get_json()
-    nome = dados.get('nome')
-    periodo = int(dados.get('periodo'))
-    cpf = dados.get('cpf')
-    nome_do_curso = dados.get('nome_do_curso')
-
-    new_aluno = Aluno(nome=nome, periodo=periodo, cpf=cpf, nome_do_curso=nome_do_curso)
-    db.session.add(new_aluno)
-    db.session.commit()
-    return jsonify({"sucesso": "Aluno adicionado com sucesso"})
+    try:
+        novo_aluno = Aluno(dados['nome'], dados['periodo'], dados['cpf'])
+        db.session.add(novo_aluno)
+        db.session.commit()
+        return jsonify({"sucesso": "Aluno adicionado com sucesso"})
+    except InvalidDataError as e:
+            return jsonify({"ERRO": e.message}), 400
 
 @Aluno_bp.route('/ALUNO/GET_ALL', methods=['GET'])
 def get_all_alunos():

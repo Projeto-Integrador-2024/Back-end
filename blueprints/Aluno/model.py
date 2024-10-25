@@ -1,5 +1,10 @@
 import re
 from extensions import db
+from flask import jsonify
+
+class InvalidDataError(Exception):
+    def __init__(self, message):
+        self.message = message
 
 class Aluno(db.Model):
     __tablename__ = "alunos"
@@ -7,26 +12,22 @@ class Aluno(db.Model):
     nome = db.Column(db.Text, nullable=False)
     periodo = db.Column(db.Integer, nullable=False)
     cpf = db.Column(db.String(11), nullable=False)
-    nome_do_curso = db.Column(db.Text, db.ForeignKey('cursos.nome'),nullable=False)
 
-
-    def __init__(self, nome, periodo, cpf, nome_do_curso):
+    def __init__(self, nome, periodo, cpf):
         if not self.valida_cpf(cpf):
-            raise ValueError("CPF inválido. Deve ter exatamente 11 números.")
+            raise InvalidDataError("CPF INVÁLIDO, CPF DEVE TER 11 CARACTERES")
         if not self.valida_periodo(periodo):
-            raise ValueError("Período inválido. Deve ser um número entre 1 e 8.")
-        if not self.valida_curso(nome_do_curso):
-            raise ValueError("Nome do curso inválido. Este curso não existe.")
+            raise InvalidDataError("PERÍODO INVÁLIDO, PERÍODO DEVE SER UM NÚMERO ENTRE 1 E 8")
         self.ra = self.gera_ra_automatico()
         self.nome = nome
         self.periodo = periodo
         self.cpf = cpf
-        self.nome_do_curso = nome_do_curso
 
-    @staticmethod
-    def valida_curso(nome_do_curso):
-        from blueprints.Curso.model import Curso
-        return db.session.query(db.exists().where(Curso.nome == nome_do_curso)).scalar()
+    #def increver(vaga){
+
+    #}
+    
+
 
     @staticmethod
     def valida_cpf(cpf):
@@ -34,7 +35,7 @@ class Aluno(db.Model):
     
     @staticmethod
     def valida_periodo(periodo):
-        return 1 <= periodo <= 8
+        return bool(1 <= periodo <= 8)
 
     @staticmethod
     def gera_ra_automatico():
