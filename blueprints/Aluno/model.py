@@ -11,7 +11,7 @@ class Aluno(db.Model):
     ra = db.Column(db.Text(8), primary_key=True)
     nome = db.Column(db.Text, nullable=False)
     periodo = db.Column(db.Integer, nullable=False)
-    cpf = db.Column(db.String(11), nullable=False)
+    cpf = db.Column(db.Text(11), nullable=False)
 
     def __init__(self, nome, periodo, cpf):
         if not self.valida_cpf(cpf):

@@ -24,7 +24,8 @@ python app.py
 Para encerrar a API digite CTR+C no terminal 
 
 ## DOCUMENTAÇÃO:
-Para usar a API leia a documentção clicando <a href="https://github.com/Projeto-Integrador-2024/Back-end/wiki/Documenta%C3%A7%C3%A3o">AQUI</a>
+A documentação está disponível, basta clicar <a href="https://documentacaoppe.netlify.app/">AQUI</a>
+
 
 ## Estrutura do projeto:
 .<br>
