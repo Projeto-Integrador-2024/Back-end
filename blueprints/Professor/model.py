@@ -1,5 +1,6 @@
 import re
 from extensions import db
+from flask import jsonify
 
 class InvalidDataError(Exception):
     def __init__(self, message):
@@ -10,6 +11,8 @@ class Professor(db.Model):
     ra              = db.Column(db.Text(8), primary_key=True)#p0000001
     nome            = db.Column(db.Text, nullable=False)
     cpf             = db.Column(db.Text(11), nullable=False)
+    
+    vagas_criadas   = db.relationship('Vaga',backref='criador')
 
     def __init__(self, nome, cpf):
         if not self.valida_cpf(cpf):
@@ -17,6 +20,28 @@ class Professor(db.Model):
         self.ra = self.gera_ra_automatico()
         self.nome = nome
         self.cpf = cpf
+    
+    def criar_vaga(self, nome, descricao, bolsa, tipo):
+        from blueprints.Vagas.model import Vaga
+        nova_vaga = Vaga(
+            nome=nome,
+            descricao=descricao,
+            bolsa=bolsa,
+            tipo=tipo,
+            criador_id=self.ra
+        )
+        self.vagas_criadas.append(nova_vaga)
+        db.session.add(nova_vaga)
+        db.session.commit()
+        return "vaga criada"
+    
+    def deletar_vaga(self,id_vaga):
+        from blueprints.Vagas.model import Vaga
+        vaga = Vaga.query.get(id_vaga)
+        if vaga and vaga.criador_id == self.ra:
+            db.session.delete(vaga)
+            db.session.commit()
+            return "vaga deletada"
 
     @staticmethod
     def valida_cpf(cpf):

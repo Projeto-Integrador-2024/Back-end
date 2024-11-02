@@ -6,12 +6,18 @@ class InvalidDataError(Exception):
     def __init__(self, message):
         self.message = message
 
+association_table = db.Table('associations',
+    db.Column('aluno_ra', db.Text, db.ForeignKey('alunos.ra'), primary_key=True),
+    db.Column('vaga_id', db.Integer, db.ForeignKey('vagas.id'), primary_key=True)
+)
+
 class Aluno(db.Model):
     __tablename__ = "alunos"
     ra = db.Column(db.Text(8), primary_key=True)
     nome = db.Column(db.Text, nullable=False)
     periodo = db.Column(db.Integer, nullable=False)
     cpf = db.Column(db.Text(11), nullable=False)
+    vagas = db.relationship('Vaga', secondary=association_table, backref='candidatos')
 
     def __init__(self, nome, periodo, cpf):
         if not self.valida_cpf(cpf):
@@ -23,11 +29,23 @@ class Aluno(db.Model):
         self.periodo = periodo
         self.cpf = cpf
 
-    #def increver(vaga){
-
-    #}
+    def increver(self, ra, id_vaga):
+        from blueprints.Vagas.model import Vaga
+        aluno = Aluno.query.get(ra) 
+        vaga = Vaga.query.get(id_vaga) 
+        if aluno.ra == self.ra:
+            aluno.vagas.append(vaga) 
+            db.session.commit()
+            return f"Aluno {ra} inscrito na vaga {id_vaga}"
     
-
+    def desinscrever(self, ra, id_vaga):
+        from blueprints.Vagas.model import Vaga
+        aluno = Aluno.query.get(ra) 
+        vaga = Vaga.query.get(id_vaga)
+        if aluno.ra == self.ra: 
+            aluno.vagas.remove(vaga)
+            db.session.commit()
+            return f"Aluno {ra} não está mais inscrito na vaga {id_vaga}"
 
     @staticmethod
     def valida_cpf(cpf):

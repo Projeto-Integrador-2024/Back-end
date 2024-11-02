@@ -11,17 +11,20 @@ class Vaga(db.Model):
     descricao       =   db.Column(db.Text, nullable=False)
     bolsa           =   db.Column(db.Integer,nullable=False)#0=sem bolsa, 1=tem bolsa
     tipo            =   db.Column(db.Integer, nullable=False)#0=Pesquisa, 1=Extensão
-    #CADA instância professor pode ser pai de VÁRIAS instâncias vagas:
+
+    criador_id      = db.Column(db.Text, db.ForeignKey('professores.ra'))
+
     def __repr__(self):
         return f'Vaga:{self.nome}'
 
-    def __init__(self, nome, descricao, bolsa, tipo):
+    def __init__(self, nome, descricao, bolsa, tipo, criador_id):
         if not self.valida(bolsa,tipo):
             raise InvalidDataError("Valor inválido para bolsa ou tipo")
         self.nome = nome
         self.descricao = descricao
         self.bolsa = bolsa
         self.tipo = tipo
+        self.criador_id = criador_id
 
     @staticmethod
     def valida(bolsa, tipo):
