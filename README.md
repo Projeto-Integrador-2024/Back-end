@@ -24,7 +24,7 @@ python app.py
 Para encerrar a API digite CTR+C no terminal 
 
 ## DOCUMENTAÇÃO:
-A documentação está disponível, basta clicar <a href="https://documentacaoppe.netlify.app/">AQUI</a>
+A documentação está disponível, basta clicar <a href="https://documentacaoppe.netlify.app/" target="_blank">AQUI</a>
 
 
 ## Estrutura do projeto:

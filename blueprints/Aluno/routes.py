@@ -3,80 +3,32 @@ from blueprints.Aluno.model import Aluno, InvalidDataError
 
 Aluno_bp = Blueprint("Aluno",__name__)
 
-
-@Aluno_bp.route('/ALUNO/CREATE', methods=['POST'])
-def criar_aluno():
-    from app import db
+@Aluno_bp.route('/ALUNO/INSCREVER', methods=['POST'])
+def increver():
     dados = request.get_json()
-    try:
-        novo_aluno = Aluno(dados['nome'], dados['periodo'], dados['cpf'])
-        db.session.add(novo_aluno)
-        db.session.commit()
-        return jsonify({"sucesso": "Aluno adicionado com sucesso"})
-    except InvalidDataError as e:
-            return jsonify({"ERRO": e.message}), 400
-
-@Aluno_bp.route('/ALUNO/GET_ALL', methods=['GET'])
-def get_all_alunos():
-    alunos = Aluno.query.all()
-    result = [
-        {
-            "ra": aluno.ra,
-            "nome": aluno.nome,
-            "periodo": aluno.periodo,
-            "cpf": aluno.cpf
-        } for aluno in alunos
-    ]
-    return jsonify(result), 200
-
-@Aluno_bp.route('/ALUNO/DELETE', methods=['DELETE'])
-def deletar_aluno():
-    from app import db
-    dados = request.get_json()
+    #Body da requisição:
     ra = dados.get('ra')
+    id_vaga = dados.get('id')
+
     aluno = Aluno.query.filter_by(ra=ra).first()
-    if aluno:
-        db.session.delete(aluno)
-        db.session.commit()
-        return jsonify({"sucesso": f"Aluno com RA {ra} foi deletado com sucesso"}), 200
-    else:
-        return jsonify({"erro": "Aluno não encontrado"}), 404
-
-@Aluno_bp.route('/ALUNO/GET_BY_RA', methods=['GET'])
-def get_aluno_by_ra():
-    dados = request.get_json()
-    ra = dados.get('ra')
-
-    try:
-        aluno = Aluno.query.filter_by(ra=ra).first()
-        if aluno:
-            result = {
-                "ra": aluno.ra,
-                "nome": aluno.nome,
-                "periodo": aluno.periodo,
-                "cpf": aluno.cpf
-            }
-            return jsonify(result), 200
-        else:
-            return jsonify({"erro": "Aluno não encontrado"}), 404
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
     
-@Aluno_bp.route('/ALUNO/UPDATE', methods=['PUT'])
-def atualizar_aluno():
-    from app import db
+    try: 
+        mensagem = aluno.increver(ra, id_vaga) 
+        return jsonify({"sucesso": mensagem}) 
+    except Exception as e: 
+        return jsonify({"ERRO": str(e)}), 400 
+
+@Aluno_bp.route('/ALUNO/DESINSCREVER', methods=['POST'])
+def desinscrever():
     dados = request.get_json()
+    #Body da requisição:
     ra = dados.get('ra')
-    nome = dados.get('nome')
-    periodo = int(dados.get('periodo'))
-    cpf = dados.get('cpf')
+    id_vaga = dados.get('id')
 
     aluno = Aluno.query.filter_by(ra=ra).first()
-    if aluno:
-        aluno.nome = nome
-        aluno.periodo = periodo
-        aluno.cpf = cpf
-        db.session.commit()
-        return jsonify({"sucesso": f"Aluno com RA {ra} foi atualizado com sucesso"}), 200
-    else:
-        return jsonify({"erro": "Aluno não encontrado"}), 404
+    
+    try: 
+        mensagem = aluno.desinscrever(ra, id_vaga) 
+        return jsonify({"sucesso": mensagem}) 
+    except Exception as e: 
+        return jsonify({"ERRO": str(e)}), 400 

@@ -21,5 +21,8 @@ app.register_blueprint(Vagas_bp)
 from blueprints.Professor.routes import Professor_bp
 app.register_blueprint(Professor_bp)
 
+from blueprints.ADMIN.routes import ADM_bp
+app.register_blueprint(ADM_bp)
+
 if __name__ == '__main__':
     app.run(debug=True)
