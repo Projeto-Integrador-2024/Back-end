@@ -1,6 +1,7 @@
 import re
 from extensions import db
 from flask import jsonify
+from flask_login import UserMixin
 
 class InvalidDataError(Exception):
     def __init__(self, message):
@@ -11,15 +12,16 @@ association_table = db.Table('associations',
     db.Column('vaga_id', db.Integer, db.ForeignKey('vagas.id'), primary_key=True)
 )
 
-class Aluno(db.Model):
+class Aluno(db.Model, UserMixin):
     __tablename__ = "alunos"
     ra = db.Column(db.Text(8), primary_key=True)
     nome = db.Column(db.Text, nullable=False)
     periodo = db.Column(db.Integer, nullable=False)
     cpf = db.Column(db.Text(11), nullable=False)
     vagas = db.relationship('Vaga', secondary=association_table, backref='candidatos')
+    senha = db.Column(db.Text(80), nullable=False)
 
-    def __init__(self, nome, periodo, cpf):
+    def __init__(self, nome, periodo, cpf, senha):
         if not self.valida_cpf(cpf):
             raise InvalidDataError("CPF INVÁLIDO, CPF DEVE TER 11 CARACTERES")
         if not self.valida_periodo(periodo):
@@ -28,6 +30,7 @@ class Aluno(db.Model):
         self.nome = nome
         self.periodo = periodo
         self.cpf = cpf
+        self.senha = senha
 
     def increver(self, ra, id_vaga):
         from blueprints.Vagas.model import Vaga
@@ -46,6 +49,9 @@ class Aluno(db.Model):
             aluno.vagas.remove(vaga)
             db.session.commit()
             return f"Aluno {ra} não está mais inscrito na vaga {id_vaga}"
+    
+    def get_id(self):
+        return self.ra
 
     @staticmethod
     def valida_cpf(cpf):

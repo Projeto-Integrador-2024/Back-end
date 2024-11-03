@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from blueprints.Aluno.model import Aluno, InvalidDataError
+from blueprints.auth import aluno_required
 
 Aluno_bp = Blueprint("Aluno",__name__)
 
 @Aluno_bp.route('/ALUNO/INSCREVER', methods=['POST'])
+@aluno_required 
 def increver():
     dados = request.get_json()
     #Body da requisição:
@@ -19,6 +21,7 @@ def increver():
         return jsonify({"ERRO": str(e)}), 400 
 
 @Aluno_bp.route('/ALUNO/DESINSCREVER', methods=['POST'])
+@aluno_required 
 def desinscrever():
     dados = request.get_json()
     #Body da requisição:

@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from blueprints.Professor.model import Professor, InvalidDataError
+from blueprints.auth import professor_required
 
 Professor_bp = Blueprint("Professor",__name__)
     
 @Professor_bp.route('/PROFESSOR/CREATE/VAGA', methods=['POST'])
+@professor_required 
 def criar_vaga():
     dados = request.get_json()
     #Body da requisição:
@@ -27,6 +29,8 @@ def criar_vaga():
     except Exception as e: 
         return jsonify({"ERRO": str(e)}), 500
     
+@Professor_bp.route('/PROFESSOR/DELETE/VAGA', methods=['DELETE'])
+@professor_required 
 def del_vaga():
     dados = request.get_json()
     id = dados.get('id')
