@@ -11,8 +11,6 @@ Professor_bp = Blueprint("Professor",__name__)
 def criar_vaga():
     from blueprints.Vagas.model import Vaga
     from extensions import db
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     dados = request.get_json()
     nova_vaga = Vaga(criador_id=current_user.ra, 
                      nome=dados['nome'],
@@ -30,8 +28,6 @@ def criar_vaga():
 def del_vaga():
     from blueprints.Vagas.model import Vaga
     from extensions import db
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     dados = request.get_json()
     vaga = Vaga(criador_id=['criador_id'],
                 id=dados['id'], 
@@ -45,71 +41,64 @@ def del_vaga():
 @professor_required
 def get_my_vagas():
     from blueprints.Vagas.model import Vaga
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     vagas = Vaga.query.filter_by(criador_id=current_user.ra).all()
     # Converte cada instância de vaga em um dicionário com todos os atributos
-    vagas_json = []
-    for vaga in vagas:
-        vaga_dict = {
-            "id": vaga.id,
+    result = [
+        {
+            "vaga_id": vaga.id,
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa,
-            "tipo": vaga.check_tipo,
-            "criador_id": vaga.criador_id
-        }
-        vagas_json.append(vaga_dict)
-
-    return jsonify(vagas_json) 
+            "bolsa": vaga.check_bolsa(),
+            "tipo":vaga.check_tipo(),
+            "criador_id":vaga.criador_id,
+            "incritos": [aluno.ra for aluno in vaga.candidatos]
+        } for vaga in vagas
+    ]
+    return jsonify(result), 200
 
 @Professor_bp.route('/PROFESSOR/GET_ALL/VAGA', methods=['GET'])
 @professor_required
-def get_all_vaga():
+def get_all_vagas():
     from blueprints.Vagas.model import Vaga
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     vagas = Vaga.query.all()
-    # Converte cada instância de vaga em um dicionário com todos os atributos
-    vagas_json = []
-    for vaga in vagas:
-        vaga_dict = {
-            "id": vaga.id,
+    result = [
+        {
+            "vaga_id": vaga.id,
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa,
-            "tipo": vaga.check_tipo,
-        }
-        vagas_json.append(vaga_dict)
-
-    return jsonify(vagas_json)
-
+            "bolsa": vaga.check_bolsa(),
+            "tipo":vaga.check_tipo(),
+            "criador_id":vaga.criador_id,
+            "incritos": [aluno.ra for aluno in vaga.candidatos]
+        } for vaga in vagas
+    ]
+    return jsonify(result), 200
 
 @Professor_bp.route('/PROFESSOR/GET_BY_ID/VAGA', methods=['GET'])
 @professor_required 
 def get_vaga_by_id():
     from blueprints.Vagas.model import Vaga
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
-    dados = request.get_json()
-    id=dados['id'],
-    vaga = Vaga.query.filter(Vaga.id == id).first()
-    vaga_dict = {
-            "id": vaga.id,
+    from app import db
+    id = request.get_json().get('id')
+    vaga = Vaga.query.filter_by(id=id).first()
+    if vaga:
+        result={
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa,
-            "tipo": vaga.check_tipo,
+            "bolsa": vaga.check_bolsa(),
+            "tipo":vaga.check_tipo(),
+            "criador_id":vaga.criador_id,
+            "incritos": [aluno.ra for aluno in vaga.candidatos]
         }
-    return jsonify(vaga_dict)
+        return jsonify(result), 200
+    else:
+        return jsonify({"erro": "Vaga não encontrada"}), 404
 
 @Professor_bp.route('/PROFESSOR/UPDATE/VAGA', methods=['PUT'])
 @professor_required
 def update_vaga():
     from extensions import db
     from blueprints.Vagas.model import Vaga
-    if not isinstance(current_user, Professor):
-        return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     dados = request.get_json()
     id = dados['id']
     vaga = Vaga.query.filter_by(id=id).first()
@@ -129,11 +118,4 @@ def update_vaga():
     
     db.session.commit()
     
-    return jsonify({
-        "id": vaga.id,
-        "nome": vaga.nome,
-        "descricao": vaga.descricao,
-        "bolsa": vaga.bolsa,
-        "tipo": vaga.tipo,
-        "criador_id": vaga.criador_id
-    }), 200
+    return jsonify({"SUCESSO": "VAGA FOI ATUALIZADA"})
