@@ -4,10 +4,12 @@ from flask_cors import CORS
 from extensions import db
 from flask_login import LoginManager, login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
+import pandas as pd
 
 from blueprints.ADMIN.model import ADM
 from blueprints.Aluno.model import Aluno
 from blueprints.Professor.model import Professor
+from blueprints.Vagas.model import Vaga
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
@@ -79,6 +81,28 @@ def login():
 def logout():
     logout_user()
     return "sucesso"
+
+@app.route('/import_csv', methods=['POST'])
+def import_csv():
+    file = request.files['file']
+    if not file:
+        return "Nenhum arquivo fornecido", 400
+
+    # Use o pandas para ler o CSV
+    data = pd.read_csv(file)
+
+    for index, row in data.iterrows():
+        vaga = Vaga(nome=row['nome'], 
+                    descricao=row['descricao'], 
+                    bolsa=bool(row['bolsa']),
+                    bolsa_valor=row['bolsa_valor'],
+                    tipo=bool(['tipo']),
+                    criador_id=str(['criador_id']))
+        db.session.add(vaga)
+
+    db.session.commit()
+    return "Dados importados com sucesso!", 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)

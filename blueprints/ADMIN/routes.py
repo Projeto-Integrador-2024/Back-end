@@ -202,12 +202,13 @@ def criar_vaga():
     nome = dados.get('nome')
     descricao = dados.get('descricao')
     bolsa = dados.get('bolsa')
+    bolsa_valor = dados.get('bolsa_valor')
     tipo = dados.get('tipo')
     criador_id = dados.get('criador_id')
 
     prof = Professor.query.filter_by(ra=criador_id).first()
     if prof:
-        new_vaga = Vaga(nome=nome, descricao=descricao, bolsa=bolsa, tipo=tipo, criador_id = criador_id)
+        new_vaga = Vaga(nome=nome, descricao=descricao, bolsa=bolsa, bolsa_valor=bolsa_valor, tipo=tipo, criador_id = criador_id)
         db.session.add(new_vaga)
         db.session.commit()
         return jsonify({"sucesso": "Vaga criada com sucesso"})
@@ -224,6 +225,7 @@ def get_all_vagas():
             "nome": vaga.nome,
             "descricao": vaga.descricao,
             "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
             "criador_id":vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
@@ -255,6 +257,7 @@ def get_vaga_by_code():
             "nome": vaga.nome,
             "descricao": vaga.descricao,
             "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
             "criador_id":vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
@@ -272,6 +275,7 @@ def atualizar_vaga():
     nome = dados.get('nome')
     descricao = dados.get('descricao')
     bolsa = dados.get('bolsa')
+    bolsa_valor = dados.get('bolsa_valor')
     tipo = dados.get('tipo')
 
     vaga = Vaga.query.filter_by(id=id).first()
@@ -279,6 +283,7 @@ def atualizar_vaga():
         vaga.nome = nome
         vaga.descricao = descricao
         vaga.bolsa = bolsa
+        vaga.bolsa_valor = bolsa_valor
         vaga.tipo = tipo
         db.session.commit()
         return jsonify({"Sucesso": f"Vaga com id: {id} atualizada"})

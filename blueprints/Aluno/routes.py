@@ -102,3 +102,16 @@ def desinscrever():
     aluno.vagas.remove(vaga)
     db.session.commit()
     return jsonify({"sucesso": 'desinscrito com sucesso'}) 
+
+@Aluno_bp.route('/ALUNO/CHANGE_RA', methods=['PUT'])
+@aluno_required 
+def change_ra():
+    from extensions import db
+    dados = request.get_json()
+    novo_ra = dados.get('ra')
+
+    aluno = Aluno.query.filter_by(ra=current_user.ra).first()
+    aluno.ra = novo_ra
+
+    db.session.commit()
+    return jsonify({"sucesso": 'RA alterado com sucesso'}) 

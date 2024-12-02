@@ -16,6 +16,7 @@ def criar_vaga():
                      nome=dados['nome'],
                      descricao=dados['descricao'],
                      bolsa=dados['bolsa'],
+                     bolsa_valor=dados['bolsa_valor'],
                      tipo=dados['tipo'],
                      )
     db.session.add(nova_vaga)
@@ -49,6 +50,7 @@ def get_my_vagas():
             "nome": vaga.nome,
             "descricao": vaga.descricao,
             "bolsa": vaga.check_bolsa(),
+            "valor": vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
             "criador_id":vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
@@ -67,6 +69,7 @@ def get_all_vagas():
             "nome": vaga.nome,
             "descricao": vaga.descricao,
             "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
             "criador_id":vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
@@ -86,6 +89,7 @@ def get_vaga_by_id():
             "nome": vaga.nome,
             "descricao": vaga.descricao,
             "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
             "criador_id":vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
@@ -114,6 +118,7 @@ def update_vaga():
     vaga.nome = dados.get('nome', vaga.nome)
     vaga.descricao = dados.get('descricao', vaga.descricao)
     vaga.bolsa = dados.get('bolsa', vaga.bolsa)
+    vaga.bolsa_valor = dados.get('bolsa_valor', vaga.bolsa_valor)
     vaga.tipo = dados.get('tipo', vaga.tipo)
     
     db.session.commit()
