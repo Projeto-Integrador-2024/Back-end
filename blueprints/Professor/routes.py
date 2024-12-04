@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from blueprints.Professor.model import Professor, InvalidDataError
 from blueprints.auth import professor_required
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 Professor_bp = Blueprint("Professor",__name__)
 
@@ -29,10 +29,9 @@ def criar_vaga():
 def del_vaga():
     from blueprints.Vagas.model import Vaga
     from extensions import db
-    dados = request.get_json()
-    vaga = Vaga(criador_id=['criador_id'],
-                id=dados['id'], 
-                )
+    id = request.get_json().get('id')
+    vaga = Vaga.query.filter_by(id=id).first()
+
     if vaga.criador_id==current_user.ra: 
         db.session.delete(vaga)
         db.session.commit()
@@ -124,3 +123,53 @@ def update_vaga():
     db.session.commit()
     
     return jsonify({"SUCESSO": "VAGA FOI ATUALIZADA"})
+
+
+# @Professor_bp.route('/PROFESSOR/IMPORT/CSV', methods=['POST'])
+# @professor_required
+# def import_csv():
+#     from flask_login import current_user 
+#     from extensions import db
+#     from blueprints.Vagas.model import Vaga
+#     import pandas as pd
+
+#     if not current_user.is_authenticated:
+#         print("Usuário não autenticado no início da função")
+#         return jsonify({"ERRO": "Usuário não autenticado"}), 403
+#     print(f"Usuário autenticado: {current_user.ra}")
+
+#     file = request.files.get('file')
+#     if not file:
+#         print("Nenhum arquivo fornecido")
+#         return jsonify({"ERRO": "Nenhum arquivo fornecido"}), 400
+
+#     try:
+#         data = pd.read_csv(file)
+#         print(data.head())  # Exibir as primeiras linhas para verificação
+#     except Exception as e:
+#         print(f"Erro ao ler o CSV: {e}")
+#         return jsonify({"ERRO": f"Erro ao ler o arquivo CSV: {str(e)}"}), 400
+
+#     try:
+#         for index, row in data.iterrows():
+#             vaga = Vaga(
+#                 criador_id=row['criador_id'],
+#                 nome=row['nome'],
+#                 descricao=row['descricao'],
+#                 bolsa=int(row['bolsa']),
+#                 bolsa_valor=row['bolsa_valor'],
+#                 tipo=int(row['tipo'])
+#             )
+#             db.session.add(vaga)
+#         db.session.commit()
+#         print("Dados importados com sucesso!")
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"Erro ao importar dados: {e}")
+#         return jsonify({"ERRO": f"Erro ao importar dados: {str(e)}"}), 500
+
+#     return jsonify({"SUCESSO": "Dados importados com sucesso!"}), 200
+
+
+
+

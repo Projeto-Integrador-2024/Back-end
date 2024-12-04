@@ -1,19 +1,24 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
 from extensions import db
-from flask_login import LoginManager, login_user, logout_user, current_user
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_bcrypt import Bcrypt
-import pandas as pd
 
 from blueprints.ADMIN.model import ADM
 from blueprints.Aluno.model import Aluno
 from blueprints.Professor.model import Professor
-from blueprints.Vagas.model import Vaga
+from datetime import timedelta
+
+from blueprints.auth import professor_required
+
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'SOME_SECRET_KEY'
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
-app.secret_key = 'SOME_KEY'
 
 #Iniciando Banco de dados e CORS:
 db.init_app(app)
@@ -23,18 +28,26 @@ CORS(app)
 #Iniciando pacote de login e função de autenticação: 
 login_manager=LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Tente carregar como Administrador
+    print(f"Tentando carregar usuário com ID: {user_id}")
     user = ADM.query.filter(ADM.adm_id==user_id).first()
-    if not user:
-        # Se não for Administrador, tente carregar como Aluno
-        user = Aluno.query.filter(Aluno.ra==user_id).first()
-    if not user:
-        # Se não for Aluno, tente carregar como Professor
-        user = Professor.query.filter(Professor.ra==user_id).first()
-    return user
+    if user:
+        print(f"Usuário carregado como ADM: {user}")
+        return user
+    user = Aluno.query.filter(Aluno.ra==user_id).first()
+    if user:
+        print(f"Usuário carregado como Aluno: {user}")
+        return user
+    user = Professor.query.filter(Professor.ra==user_id).first()
+    if user:
+        print(f"Usuário carregado como Professor: {user}")
+        return user
+    print("Usuário não encontrado")
+    return None
+
 
 bcrypt = Bcrypt(app)
 
@@ -82,27 +95,44 @@ def logout():
     logout_user()
     return "sucesso"
 
-@app.route('/import_csv', methods=['POST'])
+@app.route('/csv',methods=['POST'])
 def import_csv():
-    file = request.files['file']
+    from flask_login import current_user 
+    from extensions import db
+    from blueprints.Vagas.model import Vaga
+    import pandas as pd
+
+    file = request.files.get('file')
     if not file:
-        return "Nenhum arquivo fornecido", 400
+        print("Nenhum arquivo fornecido")
+        return jsonify({"ERRO": "Nenhum arquivo fornecido"}), 400
 
-    # Use o pandas para ler o CSV
-    data = pd.read_csv(file)
+    try:
+        data = pd.read_csv(file)
+        print(data.head())  # Exibir as primeiras linhas para verificação
+    except Exception as e:
+        print(f"Erro ao ler o CSV: {e}")
+        return jsonify({"ERRO": f"Erro ao ler o arquivo CSV: {str(e)}"}), 400
 
-    for index, row in data.iterrows():
-        vaga = Vaga(nome=row['nome'], 
-                    descricao=row['descricao'], 
-                    bolsa=bool(row['bolsa']),
-                    bolsa_valor=row['bolsa_valor'],
-                    tipo=bool(['tipo']),
-                    criador_id=str(['criador_id']))
-        db.session.add(vaga)
+    try:
+        for index, row in data.iterrows():
+            vaga = Vaga(
+                criador_id=row['criador_id'],
+                nome=row['nome'],
+                descricao=row['descricao'],
+                bolsa=int(row['bolsa']),
+                bolsa_valor=row['bolsa_valor'],
+                tipo=int(row['tipo'])
+            )
+            db.session.add(vaga)
+        db.session.commit()
+        print("Dados importados com sucesso!")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao importar dados: {e}")
+        return jsonify({"ERRO": f"Erro ao importar dados: {str(e)}"}), 500
 
-    db.session.commit()
-    return "Dados importados com sucesso!", 200
-
+    return jsonify({"SUCESSO": "Dados importados com sucesso!"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
