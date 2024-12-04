@@ -1,25 +1,28 @@
 import re
 from extensions import db
 from flask import jsonify
+from flask_login import UserMixin
+
 
 class InvalidDataError(Exception):
     def __init__(self, message):
         self.message = message
 
-class Professor(db.Model):
+class Professor(db.Model, UserMixin):
     __tablename__="professores"
     ra              = db.Column(db.Text(8), primary_key=True)#p0000001
     nome            = db.Column(db.Text, nullable=False)
     cpf             = db.Column(db.Text(11), nullable=False)
-    
     vagas_criadas   = db.relationship('Vaga',backref='criador')
+    senha           = db.Column(db.Text(80), nullable=False)
 
-    def __init__(self, nome, cpf):
+    def __init__(self, nome, cpf, senha):
         if not self.valida_cpf(cpf):
             raise InvalidDataError("CPF INVÁLIDO, CPF DEVE TER 11 CARACTERES")
         self.ra = self.gera_ra_automatico()
         self.nome = nome
         self.cpf = cpf
+        self.senha = senha
     
     def criar_vaga(self, nome, descricao, bolsa, tipo):
         from blueprints.Vagas.model import Vaga
@@ -43,6 +46,9 @@ class Professor(db.Model):
             db.session.commit()
             return "vaga deletada"
 
+    def get_id(self):
+        return self.ra
+    
     @staticmethod
     def valida_cpf(cpf):
         return bool(re.match(r'^\d{11}$', cpf))
