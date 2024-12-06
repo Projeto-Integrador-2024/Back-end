@@ -2,16 +2,16 @@ from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_cors import CORS
 from extensions import db
-from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+from flask_login import LoginManager, login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
 
 from blueprints.ADMIN.model import ADM
 from blueprints.Aluno.model import Aluno
 from blueprints.Professor.model import Professor
 from datetime import timedelta
-
-from blueprints.auth import professor_required
-
+import pandas as pd
+from blueprints.Vagas.model import Vaga
+from blueprints.Professor.model import Professor
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'SOME_SECRET_KEY'
@@ -55,9 +55,6 @@ bcrypt = Bcrypt(app)
 from blueprints.Aluno.routes import Aluno_bp
 app.register_blueprint(Aluno_bp)
 
-from blueprints.Vagas.routes import Vagas_bp
-app.register_blueprint(Vagas_bp)
-
 from blueprints.Professor.routes import Professor_bp
 app.register_blueprint(Professor_bp)
 
@@ -97,11 +94,6 @@ def logout():
 
 @app.route('/csv',methods=['POST'])
 def import_csv():
-    from flask_login import current_user 
-    from extensions import db
-    from blueprints.Vagas.model import Vaga
-    import pandas as pd
-
     file = request.files.get('file')
     if not file:
         print("Nenhum arquivo fornecido")
@@ -122,7 +114,8 @@ def import_csv():
                 descricao=row['descricao'],
                 bolsa=int(row['bolsa']),
                 bolsa_valor=row['bolsa_valor'],
-                tipo=int(row['tipo'])
+                tipo=int(row['tipo']),
+                id=int(row['id'])
             )
             db.session.add(vaga)
         db.session.commit()
@@ -133,6 +126,91 @@ def import_csv():
         return jsonify({"ERRO": f"Erro ao importar dados: {str(e)}"}), 500
 
     return jsonify({"SUCESSO": "Dados importados com sucesso!"}), 200
+
+@app.route('/csv_professores',methods=['POST'])
+def import_csv_professores():
+    file = request.files.get('file')
+    if not file:
+        print("Nenhum arquivo fornecido")
+        return jsonify({"ERRO": "Nenhum arquivo fornecido"}), 400
+
+    try:
+        data = pd.read_csv(file)
+        print(data.head())  # Exibir as primeiras linhas para verificação
+    except Exception as e:
+        print(f"Erro ao ler o CSV: {e}")
+        return jsonify({"ERRO": f"Erro ao ler o arquivo CSV: {str(e)}"}), 400
+
+    try:
+        for index, row in data.iterrows():
+            professor = Professor(
+                nome=str(row['nome']),
+                cpf=str(row['cpf']),
+                senha=str(row['senha']),
+            )
+            db.session.add(professor)
+        db.session.commit()
+        print("Dados importados com sucesso!")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao importar dados: {e}")
+        return jsonify({"ERRO": f"Erro ao importar dados: {str(e)}"}), 500
+
+    return jsonify({"SUCESSO": "Dados importados com sucesso!"}), 200
+
+@app.route('/GET_ALL_VAGAS',methods=['GET'])
+def get_all_vagas():
+    from blueprints.Vagas.model import Vaga
+    vagas = Vaga.query.all()
+    result = [
+        {
+            "vaga_id": vaga.id,
+            "nome": vaga.nome,
+            "descricao": vaga.descricao,
+            "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
+            "tipo":vaga.check_tipo(),
+            "criador_id":vaga.criador.ra,
+            "criador_nome":vaga.criador.nome,
+            "incritos": [aluno.ra for aluno in vaga.candidatos]
+        } for vaga in vagas
+    ]
+    return jsonify(result), 200
+
+@app.route('/GET_VAGAS_BY_ID',methods=['GET'])
+def get_vaga_by_code():
+    from blueprints.Vagas.model import Vaga
+    id = request.get_json().get('id')
+    vaga = Vaga.query.filter_by(id=id).first()
+    if vaga:
+        result={
+            "nome": vaga.nome,
+            "descricao": vaga.descricao,
+            "bolsa": vaga.check_bolsa(),
+            "valor":vaga.valor_bolsa(),
+            "tipo":vaga.check_tipo(),
+            "criador_id":vaga.criador.ra,
+            "criador_nome":vaga.criador.nome,
+            "incritos": [aluno.ra for aluno in vaga.candidatos]
+        }
+        return jsonify(result), 200
+    else:
+        return jsonify({"erro": "Vaga não encontrada"}), 404
+
+@app.route('/CRIAR_TESTE', methods=['POST'])
+def criar_instancias_teste():
+
+    senha = 'senha_teste'
+    Hash_da_senha = bcrypt.generate_password_hash(senha)
+    
+    novo_admin = ADM(nome="Admin_Teste",cpf="12312312312", username="teste", senha = Hash_da_senha)
+    novo_aluno = Aluno(nome="Professor_Teste",periodo=1,cpf="12312312312", senha = Hash_da_senha)
+    novo_professor = Professor(nome="Aluno_Teste",cpf="12312312312", senha = Hash_da_senha)
+    db.session.add(novo_admin)
+    db.session.add(novo_aluno)
+    db.session.add(novo_professor)
+    db.session.commit()
+    return jsonify({"sucesso": "instancias adicionadas com sucesso"})
 
 if __name__ == '__main__':
     app.run(debug=True)
