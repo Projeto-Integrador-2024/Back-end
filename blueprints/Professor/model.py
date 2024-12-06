@@ -1,6 +1,5 @@
 import re
 from extensions import db
-from flask import jsonify
 from flask_login import UserMixin
 
 

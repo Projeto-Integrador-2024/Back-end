@@ -1,6 +1,5 @@
 from functools import wraps
 from flask import Blueprint, request, jsonify
-from flask_login import current_user, login_required
 
 #Import das classes:
 from blueprints.Aluno.model import Aluno, InvalidDataError
@@ -10,21 +9,6 @@ from blueprints.ADMIN.model import ADM
 
 from blueprints.auth import admin_required
 ADM_bp = Blueprint("ADMIN",__name__)
-
-
-
-@ADM_bp.route('/ADMIN/SELFCREATE', methods=['POST'])
-def criar_admin():
-    from app import db
-    from app import bcrypt
-
-    senha = 'admin'
-    Hash_da_senha = bcrypt.generate_password_hash(senha)
-    
-    novo_admin = ADM(nome="teste",cpf="12312312312", username="teste", senha = Hash_da_senha)
-    db.session.add(novo_admin)
-    db.session.commit()
-    return jsonify({"sucesso": "ADM adicionado com sucesso"})
 
 @ADM_bp.route('/ADMIN/CREATE/ALUNO', methods=['POST'])
 @admin_required
@@ -215,23 +199,6 @@ def criar_vaga():
     else:
         return jsonify({"ERRO": "Professor não encontrado"})
 
-@ADM_bp.route('/ADMIN/GET_ALL/VAGA', methods=['GET'])
-@admin_required
-def get_all_vagas():
-    vagas = Vaga.query.all()
-    result = [
-        {
-            "vaga_id": vaga.id,
-            "nome": vaga.nome,
-            "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor":vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador_id,
-            "incritos": [aluno.ra for aluno in vaga.candidatos]
-        } for vaga in vagas
-    ]
-    return jsonify(result), 200
 
 @ADM_bp.route('/ADMIN/DELETE/VAGA', methods=['DELETE'])
 @admin_required
@@ -246,25 +213,6 @@ def deletar_vaga():
     else:
         return jsonify({"erro": "Vaga não encontrada"}), 404
 
-@ADM_bp.route('/ADMIN/GET_BY_ID/VAGA', methods=['GET'])
-@admin_required
-def get_vaga_by_code():
-    from app import db
-    id = request.get_json().get('id')
-    vaga = Vaga.query.filter_by(id=id).first()
-    if vaga:
-        result={
-            "nome": vaga.nome,
-            "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor":vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador_id,
-            "incritos": [aluno.ra for aluno in vaga.candidatos]
-        }
-        return jsonify(result), 200
-    else:
-        return jsonify({"erro": "Vaga não encontrada"}), 404
     
 @ADM_bp.route('/ADMIN/UPDATE/VAGA', methods=['PUT'])
 @admin_required

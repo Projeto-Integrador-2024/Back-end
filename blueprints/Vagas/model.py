@@ -18,9 +18,10 @@ class Vaga(db.Model):
     def __repr__(self):
         return f'Vaga:{self.nome}'
 
-    def __init__(self, nome, descricao, bolsa, bolsa_valor, tipo, criador_id):
+    def __init__(self,id, nome, descricao, bolsa, bolsa_valor, tipo, criador_id):
         if not self.valida(bolsa,tipo):
             raise InvalidDataError("Valor inválido para bolsa ou tipo")
+        self.id = id
         self.nome = nome
         self.descricao = descricao
         self.bolsa = bolsa

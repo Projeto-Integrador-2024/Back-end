@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
-from blueprints.Professor.model import Professor, InvalidDataError
 from blueprints.auth import professor_required
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 Professor_bp = Blueprint("Professor",__name__)
 
@@ -57,45 +56,6 @@ def get_my_vagas():
     ]
     return jsonify(result), 200
 
-@Professor_bp.route('/PROFESSOR/GET_ALL/VAGA', methods=['GET'])
-@professor_required
-def get_all_vagas():
-    from blueprints.Vagas.model import Vaga
-    vagas = Vaga.query.all()
-    result = [
-        {
-            "vaga_id": vaga.id,
-            "nome": vaga.nome,
-            "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor":vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador_id,
-            "incritos": [aluno.ra for aluno in vaga.candidatos]
-        } for vaga in vagas
-    ]
-    return jsonify(result), 200
-
-@Professor_bp.route('/PROFESSOR/GET_BY_ID/VAGA', methods=['GET'])
-@professor_required 
-def get_vaga_by_id():
-    from blueprints.Vagas.model import Vaga
-    from app import db
-    id = request.get_json().get('id')
-    vaga = Vaga.query.filter_by(id=id).first()
-    if vaga:
-        result={
-            "nome": vaga.nome,
-            "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor":vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador_id,
-            "incritos": [aluno.ra for aluno in vaga.candidatos]
-        }
-        return jsonify(result), 200
-    else:
-        return jsonify({"erro": "Vaga não encontrada"}), 404
 
 @Professor_bp.route('/PROFESSOR/UPDATE/VAGA', methods=['PUT'])
 @professor_required
