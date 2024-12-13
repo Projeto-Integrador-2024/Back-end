@@ -5,29 +5,13 @@ from flask_login import current_user
 
 Aluno_bp = Blueprint("Aluno",__name__)
 
-@Aluno_bp.route('/ALUNO/INSCREVER', methods=['POST'])
-@aluno_required 
-def increver():
-    from blueprints.Vagas.model import Vaga
-    from extensions import db
-    dados = request.get_json()
-    #Body da requisição:
-    id_vaga = dados.get('id')
-
-    aluno = Aluno.query.filter_by(ra=current_user.ra).first()
-    vaga = Vaga.query.filter_by(id=id_vaga).first()
-
-    aluno.vagas.append(vaga)
-    db.session.commit()
-    return jsonify({"sucesso": 'inscrito com sucesso'}) 
-
 @Aluno_bp.route('/ALUNO/GET_MY_VAGAS', methods=['GET'])
 @aluno_required 
 def get_mine():
     from blueprints.Aluno.model import association_table
     from blueprints.Vagas.model import Vaga
     from extensions import db
-# Obter o aluno atual
+    # Obter o aluno atual
     aluno = Aluno.query.filter_by(ra=current_user.ra).first()
 
     # Fazer join entre a tabela de associações e a tabela Vaga
@@ -47,6 +31,21 @@ def get_mine():
 
     return jsonify(vagas_json)
 
+@Aluno_bp.route('/ALUNO/INSCREVER', methods=['POST'])
+@aluno_required 
+def increver():
+    from blueprints.Vagas.model import Vaga
+    from extensions import db
+    dados = request.get_json()
+    #Body da requisição:
+    id_vaga = dados.get('id')
+
+    aluno = Aluno.query.filter_by(ra=current_user.ra).first()
+    vaga = Vaga.query.filter_by(id=id_vaga).first()
+
+    aluno.vagas.append(vaga)
+    db.session.commit()
+    return jsonify({"sucesso": 'inscrito com sucesso'}) 
 
 @Aluno_bp.route('/ALUNO/DESINSCREVER', methods=['POST'])
 @aluno_required 
@@ -64,15 +63,20 @@ def desinscrever():
     db.session.commit()
     return jsonify({"sucesso": 'desinscrito com sucesso'}) 
 
-@Aluno_bp.route('/ALUNO/CHANGE_RA', methods=['PUT'])
+@Aluno_bp.route('/ALUNO/ATUALIZAR', methods=['PUT'])
 @aluno_required 
-def change_ra():
+def update_perfil_aluno():
     from extensions import db
+    from app import bcrypt
     dados = request.get_json()
-    novo_ra = dados.get('ra')
 
+    Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
     aluno = Aluno.query.filter_by(ra=current_user.ra).first()
-    aluno.ra = novo_ra
+    aluno.ra = dados.get('ra')
+    aluno.nome = dados.get('nome')
+    aluno.periodo = dados.get('periodo')
+    aluno.cpf = dados.get('cpf')
+    aluno.senha = Hash_da_senha
 
     db.session.commit()
-    return jsonify({"sucesso": 'RA alterado com sucesso'}) 
+    return jsonify({"sucesso": 'dados atualizados com sucesso'}) 

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from blueprints.auth import professor_required
 from flask_login import current_user
+from blueprints.Professor.model import Professor
 
 Professor_bp = Blueprint("Professor",__name__)
 
@@ -11,7 +12,7 @@ def criar_vaga():
     from blueprints.Vagas.model import Vaga
     from extensions import db
     dados = request.get_json()
-    nova_vaga = Vaga(criador_id=current_user.ra, 
+    nova_vaga = Vaga(criador_id=current_user.SIAPE, 
                      nome=dados['nome'],
                      descricao=dados['descricao'],
                      bolsa=dados['bolsa'],
@@ -31,7 +32,7 @@ def del_vaga():
     id = request.get_json().get('id')
     vaga = Vaga.query.filter_by(id=id).first()
 
-    if vaga.criador_id==current_user.ra: 
+    if vaga.criador_id==current_user.SIAPE: 
         db.session.delete(vaga)
         db.session.commit()
         return jsonify({"sucesso": "Vaga deletada com sucesso"}), 201
@@ -40,7 +41,7 @@ def del_vaga():
 @professor_required
 def get_my_vagas():
     from blueprints.Vagas.model import Vaga
-    vagas = Vaga.query.filter_by(criador_id=current_user.ra).all()
+    vagas = Vaga.query.filter_by(criador_id=current_user.SIAPE).all()
     # Converte cada instância de vaga em um dicionário com todos os atributos
     result = [
         {
@@ -70,8 +71,8 @@ def update_vaga():
         return jsonify({"ERRO": "Vaga não encontrada"}), 404
 
     # Certifique-se de que o professor que está atualizando a vaga é o criador
-    if vaga.criador_id != current_user.ra:
-        return jsonify({"ERRO": "Acesso negado: Você não tem permissão para atualizar esta vaga"}), 403
+    if vaga.criador_id != current_user.SIAPE:
+        return jsonify({"ERRO": "Acesso negado: Você não é o criador dessa vaga"}), 403
 
     # Atualize os campos conforme necessário
     vaga.nome = dados.get('nome', vaga.nome)
@@ -85,51 +86,21 @@ def update_vaga():
     return jsonify({"SUCESSO": "VAGA FOI ATUALIZADA"})
 
 
-# @Professor_bp.route('/PROFESSOR/IMPORT/CSV', methods=['POST'])
-# @professor_required
-# def import_csv():
-#     from flask_login import current_user 
-#     from extensions import db
-#     from blueprints.Vagas.model import Vaga
-#     import pandas as pd
+@Professor_bp.route('/PROFESSOR/ATUALIZAR', methods=['PUT'])
+@professor_required
+def update_perfil_professor():
+    from app import bcrypt
+    from extensions import db
+    dados = request.get_json()
 
-#     if not current_user.is_authenticated:
-#         print("Usuário não autenticado no início da função")
-#         return jsonify({"ERRO": "Usuário não autenticado"}), 403
-#     print(f"Usuário autenticado: {current_user.ra}")
+    Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
+    professor = Professor.query.filter_by(SIAPE=current_user.SIAPE).first()
+    professor.SIAPE = dados.get('SIAPE')
+    professor.nome = dados.get('nome')
+    professor.cpf = dados.get('cpf')
+    professor.senha = Hash_da_senha
 
-#     file = request.files.get('file')
-#     if not file:
-#         print("Nenhum arquivo fornecido")
-#         return jsonify({"ERRO": "Nenhum arquivo fornecido"}), 400
-
-#     try:
-#         data = pd.read_csv(file)
-#         print(data.head())  # Exibir as primeiras linhas para verificação
-#     except Exception as e:
-#         print(f"Erro ao ler o CSV: {e}")
-#         return jsonify({"ERRO": f"Erro ao ler o arquivo CSV: {str(e)}"}), 400
-
-#     try:
-#         for index, row in data.iterrows():
-#             vaga = Vaga(
-#                 criador_id=row['criador_id'],
-#                 nome=row['nome'],
-#                 descricao=row['descricao'],
-#                 bolsa=int(row['bolsa']),
-#                 bolsa_valor=row['bolsa_valor'],
-#                 tipo=int(row['tipo'])
-#             )
-#             db.session.add(vaga)
-#         db.session.commit()
-#         print("Dados importados com sucesso!")
-#     except Exception as e:
-#         db.session.rollback()
-#         print(f"Erro ao importar dados: {e}")
-#         return jsonify({"ERRO": f"Erro ao importar dados: {str(e)}"}), 500
-
-#     return jsonify({"SUCESSO": "Dados importados com sucesso!"}), 200
-
-
+    db.session.commit()
+    return jsonify({"sucesso": 'dados atualizados com sucesso'}) 
 
 

@@ -22,12 +22,9 @@ def professor_required(f):
     @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
-        if current_user.is_authenticated:
-            print(f"Usuário autenticado: {current_user.ra}")
         if current_user.is_authenticated and isinstance(current_user, Professor):
             return f(*args, **kwargs)
         else:
-            print(f"Acesso negado para: {current_user}")
             return jsonify({"ERRO": "Acesso negado: Requer professor"}), 403
     return decorated_function
 

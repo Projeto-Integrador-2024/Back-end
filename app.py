@@ -41,7 +41,7 @@ def load_user(user_id):
     if user:
         print(f"Usuário carregado como Aluno: {user}")
         return user
-    user = Professor.query.filter(Professor.ra==user_id).first()
+    user = Professor.query.filter(Professor.SIAPE==user_id).first()
     if user:
         print(f"Usuário carregado como Professor: {user}")
         return user
@@ -61,7 +61,7 @@ app.register_blueprint(Professor_bp)
 from blueprints.ADMIN.routes import ADM_bp
 app.register_blueprint(ADM_bp)
 
-
+#ROTAS GERAIS:
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -74,12 +74,20 @@ def login():
     dados = request.get_json()
     username = dados['username']
     senha = dados['senha']
-    if username[0].lower() == 'a':
-        user = Aluno.query.filter(Aluno.ra==username).first()
-    elif username[0].lower() == 'p':
-        user = Professor.query.filter(Professor.ra==username).first()
-    else:
-        user = ADM.query.filter(ADM.username==username).first()
+
+    # Inicializa a variável `user` como None
+    user = None
+
+    # Verifica se o usuário é um Aluno
+    user = Aluno.query.filter(Aluno.ra == username).first()
+
+    # Se `user` ainda for None, verifica se é um Professor
+    if not user:
+        user = Professor.query.filter(Professor.SIAPE == username).first()
+
+    # Se `user` ainda for None, verifica se é um ADM
+    if not user:
+        user = ADM.query.filter(ADM.username == username).first()
 
     if bcrypt.check_password_hash(user.senha, senha):
         login_user(user)
@@ -115,7 +123,6 @@ def import_csv():
                 bolsa=int(row['bolsa']),
                 bolsa_valor=row['bolsa_valor'],
                 tipo=int(row['tipo']),
-                id=int(row['id'])
             )
             db.session.add(vaga)
         db.session.commit()
@@ -144,6 +151,7 @@ def import_csv_professores():
     try:
         for index, row in data.iterrows():
             professor = Professor(
+                SIAPE=str(row['SIAPE']),
                 nome=str(row['nome']),
                 cpf=str(row['cpf']),
                 senha=str(row['senha']),
@@ -170,8 +178,8 @@ def get_all_vagas():
             "bolsa": vaga.check_bolsa(),
             "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador.ra,
-            "criador_nome":vaga.criador.nome,
+            "criador_id":vaga.criador_id,
+            "criador_nome": vaga.criador.nome if vaga.criador else "Desconhecido",
             "incritos": [aluno.ra for aluno in vaga.candidatos]
         } for vaga in vagas
     ]
@@ -189,7 +197,7 @@ def get_vaga_by_code():
             "bolsa": vaga.check_bolsa(),
             "valor":vaga.valor_bolsa(),
             "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador.ra,
+            "criador_id":vaga.criador.SIAPE,
             "criador_nome":vaga.criador.nome,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
         }
@@ -204,13 +212,32 @@ def criar_instancias_teste():
     Hash_da_senha = bcrypt.generate_password_hash(senha)
     
     novo_admin = ADM(nome="Admin_Teste",cpf="12312312312", username="teste", senha = Hash_da_senha)
-    novo_aluno = Aluno(nome="Professor_Teste",periodo=1,cpf="12312312312", senha = Hash_da_senha)
-    novo_professor = Professor(nome="Aluno_Teste",cpf="12312312312", senha = Hash_da_senha)
+    novo_aluno = Aluno(ra="a0000000",nome="Aluno_Teste",periodo=1,cpf="12312312312", senha = Hash_da_senha)
+    novo_professor = Professor(SIAPE="0000000",nome="Professor_Teste",cpf="12312312312", senha = Hash_da_senha)
     db.session.add(novo_admin)
     db.session.add(novo_aluno)
     db.session.add(novo_professor)
     db.session.commit()
     return jsonify({"sucesso": "instancias adicionadas com sucesso"})
+
+@app.route('/CADASTRO_ALUNO', methods=['POST'])
+def cadastro_aluno():
+    dados = request.get_json()
+    Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
+    novo_aluno = Aluno(dados['ra'],dados['nome'], dados['periodo'], dados['cpf'], Hash_da_senha)
+    db.session.add(novo_aluno)
+    db.session.commit()
+    return jsonify({"sucesso": "cadastro realizado com sucesso"})
+
+@app.route('/CADASTRO_PROFESSOR', methods=['POST'])
+def cadastro_prof():
+    dados = request.get_json()
+    Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
+    novo_prof = Professor(dados['SIAPE'],dados['nome'], dados['cpf'],Hash_da_senha)
+    db.session.add(novo_prof)
+    db.session.commit()
+    return jsonify({"sucesso": "cadastro realizado com sucesso"})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
