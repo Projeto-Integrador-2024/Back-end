@@ -12,29 +12,18 @@ class Vaga(db.Model):
     bolsa           =   db.Column(db.Integer,nullable=False)#0=sem bolsa, 1=tem bolsa
     bolsa_valor     =   db.Column(db.Integer,nullable=True)#valor da bolsa
     tipo            =   db.Column(db.Integer, nullable=False)#0=Pesquisa, 1=Extensão
-
-    criador_id      = db.Column(db.Text, db.ForeignKey('professores.ra'))
+    criador_id      =   db.Column(db.Text, db.ForeignKey('professores.SIAPE'))
 
     def __repr__(self):
         return f'Vaga:{self.nome}'
 
-    def __init__(self,id, nome, descricao, bolsa, bolsa_valor, tipo, criador_id):
-        if not self.valida(bolsa,tipo):
-            raise InvalidDataError("Valor inválido para bolsa ou tipo")
-        self.id = id
+    def __init__(self, nome, descricao, bolsa, bolsa_valor, tipo, criador_id):
         self.nome = nome
         self.descricao = descricao
         self.bolsa = bolsa
         self.bolsa_valor = bolsa_valor
         self.tipo = tipo
-        self.criador_id = criador_id
-
-    @staticmethod
-    def valida(bolsa, tipo):
-        if bolsa not in (0, 1) or tipo not in (0, 1):
-            return False
-        else:
-            return True
+        self.criador_id = str(criador_id).zfill(7)
 
     def check_bolsa(self):
         if self.bolsa==0:

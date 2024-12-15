@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: a2f4170ba404
+Revision ID: fc9582dd315a
 Revises: 
-Create Date: 2024-11-02 22:14:13.319231
+Create Date: 2024-12-13 16:47:02.220579
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a2f4170ba404'
+revision = 'fc9582dd315a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -31,22 +31,25 @@ def upgrade():
     sa.Column('nome', sa.Text(), nullable=False),
     sa.Column('periodo', sa.Integer(), nullable=False),
     sa.Column('cpf', sa.Text(length=11), nullable=False),
+    sa.Column('senha', sa.Text(length=80), nullable=False),
     sa.PrimaryKeyConstraint('ra')
     )
     op.create_table('professores',
-    sa.Column('ra', sa.Text(length=8), nullable=False),
+    sa.Column('SIAPE', sa.Text(length=7), nullable=False),
     sa.Column('nome', sa.Text(), nullable=False),
     sa.Column('cpf', sa.Text(length=11), nullable=False),
-    sa.PrimaryKeyConstraint('ra')
+    sa.Column('senha', sa.Text(length=80), nullable=False),
+    sa.PrimaryKeyConstraint('SIAPE')
     )
     op.create_table('vagas',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nome', sa.Text(), nullable=False),
     sa.Column('descricao', sa.Text(), nullable=False),
     sa.Column('bolsa', sa.Integer(), nullable=False),
+    sa.Column('bolsa_valor', sa.Integer(), nullable=True),
     sa.Column('tipo', sa.Integer(), nullable=False),
     sa.Column('criador_id', sa.Text(), nullable=True),
-    sa.ForeignKeyConstraint(['criador_id'], ['professores.ra'], ),
+    sa.ForeignKeyConstraint(['criador_id'], ['professores.SIAPE'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('associations',

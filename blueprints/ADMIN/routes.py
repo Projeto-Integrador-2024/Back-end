@@ -2,28 +2,12 @@ from functools import wraps
 from flask import Blueprint, request, jsonify
 
 #Import das classes:
-from blueprints.Aluno.model import Aluno, InvalidDataError
+from blueprints.Aluno.model import Aluno
 from blueprints.Professor.model import Professor
 from blueprints.Vagas.model import Vaga
-from blueprints.ADMIN.model import ADM
 
 from blueprints.auth import admin_required
 ADM_bp = Blueprint("ADMIN",__name__)
-
-@ADM_bp.route('/ADMIN/CREATE/ALUNO', methods=['POST'])
-@admin_required
-def criar_aluno():
-    from app import db
-    from app import bcrypt
-    dados = request.get_json()
-    try:
-        Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
-        novo_aluno = Aluno(dados['nome'], dados['periodo'], dados['cpf'], Hash_da_senha)
-        db.session.add(novo_aluno)
-        db.session.commit()
-        return jsonify({"sucesso": "Aluno adicionado com sucesso"})
-    except InvalidDataError as e:
-            return jsonify({"ERRO": e.message}), 400
 
 @ADM_bp.route('/ADMIN/GET_ALL/ALUNO', methods=['GET'])
 @admin_required
@@ -96,20 +80,6 @@ def atualizar_aluno():
     else:
         return jsonify({"erro": "Aluno não encontrado"}), 404
 
-@ADM_bp.route('/ADMIN/CREATE/PROFESSOR', methods=['POST'])
-@admin_required
-def criar_prof():
-    from app import db
-    from app import bcrypt
-    dados = request.get_json()
-    try:
-        Hash_da_senha = bcrypt.generate_password_hash(dados['senha'])
-        novo_prof = Professor(dados['nome'], dados['cpf'],Hash_da_senha)
-        db.session.add(novo_prof)
-        db.session.commit()
-        return jsonify({"sucesso": "Professor adicionado com sucesso"})
-    except InvalidDataError as e:
-            return jsonify({"ERRO": e.message}), 400
 
 @ADM_bp.route('/ADMIN/GET_ALL/PROFESSOR', methods=['GET'])
 @admin_required
@@ -117,7 +87,7 @@ def get_all_profs():
     profs = Professor.query.all()
     result = [
         {
-            "ra": prof.ra,
+            "SIAPE": prof.SIAPE,
             "nome": prof.nome,
             "cpf": prof.cpf,
             "vagas_criadas": [vaga.id for vaga in prof.vagas_criadas]
@@ -130,12 +100,12 @@ def get_all_profs():
 def deletar_prof():
     from app import db
     dados = request.get_json()
-    ra = dados.get('ra')
-    prof = Professor.query.filter_by(ra=ra).first()
+    siape = dados.get('SIAPE')
+    prof = Professor.query.filter_by(SIAPE=siape).first()
     if prof:
         db.session.delete(prof)
         db.session.commit()
-        return jsonify({"sucesso": f"Professor com RA {ra} foi deletado com sucesso"}), 200
+        return jsonify({"sucesso": f"Professor com SIAPE: {siape} foi deletado com sucesso"}), 200
     else:
         return jsonify({"erro": "Professor não encontrado"}), 404
 
@@ -143,13 +113,13 @@ def deletar_prof():
 @admin_required
 def get_prof_by_ra():
     dados = request.get_json()
-    ra = dados.get('ra')
+    siape = dados.get('SIAPE')
 
     try:
-        prof = Professor.query.filter_by(ra=ra).first()
+        prof = Professor.query.filter_by(SIAPE=siape).first()
         if prof:
             result = {
-                "ra": prof.ra,
+                "SIAPE": prof.SIAPE,
                 "nome": prof.nome,
                 "cpf": prof.cpf,
                 "vagas_criadas": [vaga.id for vaga in prof.vagas_criadas]
@@ -165,16 +135,16 @@ def get_prof_by_ra():
 def atualizar_prof():
     from app import db
     dados = request.get_json()
-    ra = dados.get('ra')
+    siape = dados.get('SIAPE')
     nome = dados.get('nome')
     cpf = dados.get('cpf')
 
-    prof = Professor.query.filter_by(ra=ra).first()
+    prof = Professor.query.filter_by(SIAPE=siape).first()
     if prof:
         prof.nome = nome
         prof.cpf = cpf
         db.session.commit()
-        return jsonify({"sucesso": f"Professor com RA {ra} foi atualizado com sucesso"}), 200
+        return jsonify({"sucesso": f"Professor com SIAPE {siape} foi atualizado com sucesso"}), 200
     else:
         return jsonify({"erro": "Professor não encontrado"}), 404
 
@@ -190,7 +160,7 @@ def criar_vaga():
     tipo = dados.get('tipo')
     criador_id = dados.get('criador_id')
 
-    prof = Professor.query.filter_by(ra=criador_id).first()
+    prof = Professor.query.filter_by(SIAPE=criador_id).first()
     if prof:
         new_vaga = Vaga(nome=nome, descricao=descricao, bolsa=bolsa, bolsa_valor=bolsa_valor, tipo=tipo, criador_id = criador_id)
         db.session.add(new_vaga)
