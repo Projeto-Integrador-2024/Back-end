@@ -21,15 +21,17 @@ def get_mine():
     vagas_json = []
     for vaga in results:
         vaga_dict = {
-            "id": vaga.id,
+            "vaga_id": vaga.id,
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "tipo": vaga.check_tipo(),
+            "bolsa": vaga.bolsa,
+            "bolsa_valor": vaga.bolsa_valor,
+            "tipo": vaga.tipo,
         }
         vagas_json.append(vaga_dict)
 
-    return jsonify(vagas_json)
+    return jsonify(vagas_json), 200
+
 
 @Aluno_bp.route('/ALUNO/INSCREVER', methods=['POST'])
 @aluno_required 
@@ -53,15 +55,38 @@ def desinscrever():
     from blueprints.Vagas.model import Vaga
     from extensions import db
     dados = request.get_json()
-    #Body da requisição:
     id_vaga = dados.get('id')
+
+    print(f"Request data: {dados}")
 
     aluno = Aluno.query.filter_by(ra=current_user.ra).first()
     vaga = Vaga.query.filter_by(id=id_vaga).first()
 
+    print(f"Dados recebidos: id_vaga={id_vaga}, aluno_ra={current_user.ra}")
+    print(f"Aluno encontrado: {aluno}")
+    print(f"Vaga encontrada: {vaga}")
+
+    if not aluno or not vaga:
+        print("Aluno ou Vaga não encontrados")
+        return jsonify({"erro": "Aluno ou Vaga não encontrados"}), 404
+
+    print(f"Tentando desinscrever {aluno.ra} da vaga {vaga.id}")
+
+    if vaga not in aluno.vagas:
+        print(f"O aluno {aluno.ra} não está inscrito na vaga {vaga.id}")
+        return jsonify({"erro": "O aluno não está inscrito nesta vaga"}), 400
+
     aluno.vagas.remove(vaga)
-    db.session.commit()
-    return jsonify({"sucesso": 'desinscrito com sucesso'}) 
+    try:
+        db.session.commit()
+        print(f"Aluno {aluno.ra} desinscrito da vaga {vaga.id} com sucesso")
+        return jsonify({"sucesso": 'Desinscrito com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao desinscrever da vaga: {str(e)}")
+        return jsonify({"erro": "Erro ao desinscrever da vaga", "detalhes": str(e)}), 500
+
+
 
 @Aluno_bp.route('/ALUNO/ATUALIZAR', methods=['PUT'])
 @aluno_required 

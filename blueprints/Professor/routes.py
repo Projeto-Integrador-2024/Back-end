@@ -48,14 +48,15 @@ def get_my_vagas():
             "vaga_id": vaga.id,
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor": vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
-            "criador_id":vaga.criador_id,
+            "bolsa": vaga.bolsa,
+            "bolsa_valor": vaga.bolsa_valor,
+            "tipo": vaga.tipo,
+            "criador_id": vaga.criador_id,
             "incritos": [aluno.ra for aluno in vaga.candidatos]
         } for vaga in vagas
     ]
     return jsonify(result), 200
+
 
 
 @Professor_bp.route('/PROFESSOR/UPDATE/VAGA', methods=['PUT'])

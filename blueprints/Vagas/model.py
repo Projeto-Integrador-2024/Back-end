@@ -10,7 +10,7 @@ class Vaga(db.Model):
     nome            =   db.Column(db.Text, nullable=False)
     descricao       =   db.Column(db.Text, nullable=False)
     bolsa           =   db.Column(db.Integer,nullable=False)#0=sem bolsa, 1=tem bolsa
-    bolsa_valor     =   db.Column(db.Integer,nullable=True)#valor da bolsa
+    bolsa_valor = db.Column(db.Integer, nullable=False, default=0)  # valor da bolsa
     tipo            =   db.Column(db.Integer, nullable=False)#0=Pesquisa, 1=Extensão
     criador_id      =   db.Column(db.Text, db.ForeignKey('professores.SIAPE'))
 
