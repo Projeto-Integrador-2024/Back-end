@@ -1,18 +1,26 @@
 from extensions import db
+from blueprints.Aluno.model import selecionados_table, association_table, favoritos_table
 
 class InvalidDataError(Exception):
     def __init__(self, message):
         self.message = message
 
 class Vaga(db.Model):
-    __tablename__="vagas"
-    id              =   db.Column(db.Integer, primary_key=True)
-    nome            =   db.Column(db.Text, nullable=False)
-    descricao       =   db.Column(db.Text, nullable=False)
-    bolsa           =   db.Column(db.Integer,nullable=False)#0=sem bolsa, 1=tem bolsa
-    bolsa_valor     =   db.Column(db.Integer,nullable=True)#valor da bolsa
-    tipo            =   db.Column(db.Integer, nullable=False)#0=Pesquisa, 1=Extensão
-    criador_id      =   db.Column(db.Text, db.ForeignKey('professores.SIAPE'))
+    __tablename__ = "vagas"
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.Text, nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    bolsa = db.Column(db.Integer, nullable=False)  # 0=sem bolsa, 1=tem bolsa
+    bolsa_valor = db.Column(db.Integer, nullable=True)  # Valor da bolsa
+    tipo = db.Column(db.Integer, nullable=False)  # 0=Pesquisa, 1=Extensão
+    criador_id = db.Column(db.Text, db.ForeignKey('professores.SIAPE'))
+
+    # Em Vaga
+    candidatos = db.relationship('Aluno', secondary=association_table, back_populates="vagas")
+    favoritos = db.relationship('Aluno', secondary=favoritos_table, back_populates="vagas_favoritadas")
+    alunos_selecionados = db.relationship('Aluno', secondary=selecionados_table, back_populates="vagas_selecionadas")
+
+
 
     def __repr__(self):
         return f'Vaga:{self.nome}'

@@ -22,6 +22,7 @@ def professor_required(f):
     @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
+        print(f"Usuário autenticado: {current_user}, ID: {current_user.get_id() if current_user.is_authenticated else 'Nenhum'}")
         if current_user.is_authenticated and isinstance(current_user, Professor):
             return f(*args, **kwargs)
         else:

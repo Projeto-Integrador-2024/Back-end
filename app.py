@@ -19,6 +19,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
+# app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
 
 #Iniciando Banco de dados e CORS:
 db.init_app(app)
@@ -69,31 +70,28 @@ def index():
     else:
         return 'No user is logged in'
 
-@app.route('/login',methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     dados = request.get_json()
-    username = dados['username']
-    senha = dados['senha']
+    username = dados.get('username')  # Usa `.get()` para evitar KeyError
+    senha = dados.get('senha')
 
-    # Inicializa a variável `user` como None
+    if not username or not senha:
+        return jsonify({"error": "Usuário e senha são obrigatórios"}), 400
+
     user = None
 
-    # Verifica se o usuário é um Aluno
-    user = Aluno.query.filter(Aluno.ra == username).first()
+    # Tenta encontrar o usuário em Aluno, Professor ou ADM
+    user = Aluno.query.filter_by(ra=username).first() or \
+           Professor.query.filter_by(SIAPE=username).first() or \
+           ADM.query.filter_by(username=username).first()
 
-    # Se `user` ainda for None, verifica se é um Professor
-    if not user:
-        user = Professor.query.filter(Professor.SIAPE == username).first()
+    if user and bcrypt.check_password_hash(user.senha, senha):  # Verifica a senha corretamente
+        login_user(user, remember=True)  # Ativa "remember" para sessões persistentes
+        return jsonify({"message": f"Login bem-sucedido, olá {user.nome}!"}), 200
 
-    # Se `user` ainda for None, verifica se é um ADM
-    if not user:
-        user = ADM.query.filter(ADM.username == username).first()
+    return jsonify({"error": "Credenciais inválidas"}), 401
 
-    if bcrypt.check_password_hash(user.senha, senha):
-        login_user(user)
-        return f"sucesso, olá {user.nome}"
-    else:
-        return "ERRO"
     
 @app.route('/logout')
 def logout():
@@ -150,11 +148,15 @@ def import_csv_professores():
 
     try:
         for index, row in data.iterrows():
+            # Gerar o hash da senha
+            senha_hash = bcrypt.generate_password_hash(str(row['senha'])).decode('utf-8')
+            
+            # Criar o objeto Professor com o hash da senha
             professor = Professor(
                 SIAPE=str(row['SIAPE']),
                 nome=str(row['nome']),
                 cpf=str(row['cpf']),
-                senha=str(row['senha']),
+                senha=senha_hash,  # Armazenando o hash da senha
             )
             db.session.add(professor)
         db.session.commit()
