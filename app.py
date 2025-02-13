@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_migrate import Migrate
 from flask_cors import CORS
 from extensions import db
@@ -19,17 +19,19 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///./SISUNI.db'
-# app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
 
 #Iniciando Banco de dados e CORS:
 db.init_app(app)
 migrate = Migrate(app, db)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 #Iniciando pacote de login e função de autenticação: 
 login_manager=LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -63,6 +65,16 @@ from blueprints.ADMIN.routes import ADM_bp
 app.register_blueprint(ADM_bp)
 
 #ROTAS GERAIS:
+
+@app.after_request
+def add_partitioned_cookie(response):
+    session_cookie = response.headers.get('Set-Cookie')
+    if session_cookie:
+        # Adiciona o atributo "Partitioned" ao cookie de sessão
+        session_cookie = f"{session_cookie}; Partitioned"
+        response.headers['Set-Cookie'] = session_cookie
+    return response
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -70,27 +82,47 @@ def index():
     else:
         return 'No user is logged in'
 
+@app.route('/check-auth', methods=['GET'])
+def check_auth():
+    if current_user.is_authenticated:
+        return jsonify({"authenticated": True}), 200
+    else:
+        return jsonify({"authenticated": False}), 401
+
+
 @app.route('/login', methods=['POST'])
 def login():
     dados = request.get_json()
-    username = dados.get('username')  # Usa `.get()` para evitar KeyError
-    senha = dados.get('senha')
-
-    if not username or not senha:
-        return jsonify({"error": "Usuário e senha são obrigatórios"}), 400
-
+    username = dados['username']
+    senha = dados['senha']
+    
+    # Inicializa a variável `user` como None
     user = None
+    user_type = None
 
-    # Tenta encontrar o usuário em Aluno, Professor ou ADM
-    user = Aluno.query.filter_by(ra=username).first() or \
-           Professor.query.filter_by(SIAPE=username).first() or \
-           ADM.query.filter_by(username=username).first()
+    # Verifica se o usuário é um Aluno
+    user = Aluno.query.filter(Aluno.ra == username).first()
+    if user:
+        user_type = 'aluno'
 
-    if user and bcrypt.check_password_hash(user.senha, senha):  # Verifica a senha corretamente
-        login_user(user, remember=True)  # Ativa "remember" para sessões persistentes
-        return jsonify({"message": f"Login bem-sucedido, olá {user.nome}!"}), 200
+    # Se `user` ainda for None, verifica se é um Professor
+    if not user:
+        user = Professor.query.filter(Professor.SIAPE == username).first()
+        if user:
+            user_type = 'professor'
 
-    return jsonify({"error": "Credenciais inválidas"}), 401
+    # Se `user` ainda for None, verifica se é um ADM
+    if not user:
+        user = ADM.query.filter(ADM.username == username).first()
+        if user:
+            user_type = 'admin'
+
+    # Verifica a senha e loga o usuário
+    if user and bcrypt.check_password_hash(user.senha, senha):
+        login_user(user)
+        return jsonify({"sucesso": f"Olá, {user.nome}", "tipo": user_type}), 200
+    else:
+        return jsonify({"erro": "Credenciais inválidas"}), 401
 
     
 @app.route('/logout')
@@ -148,15 +180,11 @@ def import_csv_professores():
 
     try:
         for index, row in data.iterrows():
-            # Gerar o hash da senha
-            senha_hash = bcrypt.generate_password_hash(str(row['senha'])).decode('utf-8')
-            
-            # Criar o objeto Professor com o hash da senha
             professor = Professor(
                 SIAPE=str(row['SIAPE']),
                 nome=str(row['nome']),
                 cpf=str(row['cpf']),
-                senha=senha_hash,  # Armazenando o hash da senha
+                senha=str(row['senha']),
             )
             db.session.add(professor)
         db.session.commit()
@@ -177,9 +205,9 @@ def get_all_vagas():
             "vaga_id": vaga.id,
             "nome": vaga.nome,
             "descricao": vaga.descricao,
-            "bolsa": vaga.check_bolsa(),
-            "valor":vaga.valor_bolsa(),
-            "tipo":vaga.check_tipo(),
+            "bolsa": vaga.bolsa,
+            "valor":vaga.bolsa_valor,
+            "tipo":vaga.tipo,
             "criador_id":vaga.criador_id,
             "criador_nome": vaga.criador.nome if vaga.criador else "Desconhecido",
             "incritos": [aluno.ra for aluno in vaga.candidatos]
