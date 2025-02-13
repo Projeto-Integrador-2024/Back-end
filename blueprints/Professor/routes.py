@@ -140,8 +140,10 @@ def selecionar_alunos():
 def get_selecionados():
     from blueprints.Vagas.model import Vaga
 
-    dados = request.get_json()
-    id_vaga = dados.get('id_vaga')
+    # Obtém o id da vaga a partir dos parâmetros da query string
+    id_vaga = request.args.get('id_vaga')
+    if not id_vaga:
+        return jsonify({"erro": "id_vaga não fornecido"}), 400
 
     vaga = Vaga.query.filter_by(id=id_vaga).first()
 
@@ -157,6 +159,7 @@ def get_selecionados():
     ]
 
     return jsonify(selecionados)
+
 
 @Professor_bp.route('/PROFESSOR/DESSELECIONAR_ALUNOS', methods=['POST'])
 @professor_required
